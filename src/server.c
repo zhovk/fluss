@@ -85,6 +85,15 @@ void fluss_server_listen(fluss_server_t *instance) {
     }
 
     printf("New client connected.\n");
+
+    char buffer[1024];
+    ssize_t bytes_read = read(connfd, buffer, sizeof(buffer));
+
+    if (bytes_read == 0) {
+      printf("Client disconnected.\n");
+    } else if (bytes_read < 0) {
+      perror("Read error");
+    }
   }
 }
 
