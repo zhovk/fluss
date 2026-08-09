@@ -1,7 +1,13 @@
+/*
+ * fluss.h
+ *
+ * Created on: Aug 9, 2026
+ * Author: zhovk@github.com
+ */
+
 #ifndef FLUSS_H
-#define FLUSS_H 
+#define FLUSS_H
 
-#define ok 1
-#define err 2
+#include "server.h"
 
-#endif 
+#endif
