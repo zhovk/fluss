@@ -14,6 +14,7 @@
 typedef struct {
   int socketfd;
   int port;
+  int max_threads;
   struct sockaddr_in address;
 } fluss_server_t;
 

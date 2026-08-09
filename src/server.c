@@ -5,7 +5,9 @@
  * Author: zhovk@github.com
  */
 
+#include <arpa/inet.h>
 #include <fluss/server.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +15,9 @@
 #include <unistd.h>
 
 static void initialize_server_socket(fluss_server_t *instance);
+static void handle_client_connection(struct in_addr sin_addr,
+                                     in_port_t sin_port);
+static void handle_client_buffer(int connfd);
 
 fluss_server_t *fluss_server_create(int port) {
   fluss_server_t *instance = malloc(sizeof(fluss_server_t));
@@ -23,6 +28,7 @@ fluss_server_t *fluss_server_create(int port) {
   }
 
   instance->port = port;
+  instance->max_threads = 5;
 
   printf("Starting initialization of the server..\n");
   initialize_server_socket(instance);
@@ -64,8 +70,29 @@ static void initialize_server_socket(fluss_server_t *instance) {
   printf("\t* [3/3] Socket binded succesfully.\n");
 }
 
-void fluss_server_listen(fluss_server_t *instance) {
+static void handle_client_buffer(int connfd) {
+  char buffer[1024];
+  ssize_t bytes_read = read(connfd, buffer, sizeof(buffer));
 
+  if (bytes_read == 0) {
+    printf("Client disconnected.\n");
+  } else if (bytes_read < 0) {
+    perror("Read error");
+  }
+
+  close(connfd);
+}
+
+static void handle_client_connection(struct in_addr sin_addr,
+                                     in_port_t sin_port) {
+  char client_ip[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &(sin_addr), client_ip, sizeof(client_ip));
+  int client_port = ntohs(sin_port);
+
+  printf("New client connected from %s:%d.\n", client_ip, client_port);
+}
+
+void fluss_server_listen(fluss_server_t *instance) {
   if (listen(instance->socketfd, 1024) != 0) {
     perror("Server fail to start listening.");
     exit(EXIT_FAILURE);
@@ -84,19 +111,10 @@ void fluss_server_listen(fluss_server_t *instance) {
       exit(EXIT_FAILURE);
     }
 
-    printf("New client connected.\n");
-
-    char buffer[1024];
-    ssize_t bytes_read = read(connfd, buffer, sizeof(buffer));
-
-    if (bytes_read == 0) {
-      printf("Client disconnected.\n");
-    } else if (bytes_read < 0) {
-      perror("Read error");
-    }
+    handle_client_connection(cli.sin_addr, cli.sin_port);
+    handle_client_buffer(connfd);
   }
 }
-
 void fluss_server_free(fluss_server_t *instance) {
   if (instance == NULL) {
     return;
